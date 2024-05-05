@@ -1,9 +1,12 @@
 uint lastCheck = 0;
 uint hornReactivationTime = 0;
 bool timeoutActive = false;
+bool HornCurrentlyDisabled = false;
+
 
 /** Called every frame. `dt` is the delta time (milliseconds since last frame).
 */
+/*
 void Update(float dt) {
     if (S_Demo) {
         ToggleOnOffRepeatedly();
@@ -11,7 +14,8 @@ void Update(float dt) {
         CheckHornReEnable();
     }
 }
-
+*/
+/*
 void CheckHornReEnable() {
     if (timeoutActive && Time::Now > hornReactivationTime) {
         timeoutActive = false;
@@ -34,11 +38,16 @@ void OnActivateTimeout() {
     startnew(SetHornsDisabled);
 }
 
+
+void Main()
+{
+   print("Hello world!");
+}
+*/
 void SetHornsDisabled() {
     try {
         cast<CTrackManiaNetworkServerInfo>(cast<CGameManiaPlanet>(GetApp()).Network.ServerInfo).DisableHorns = true;
-        if (S_ShowNotifications)
-            Notify("Disabled horns for " + S_TimeoutLength + " s.");
+        HornCurrentlyDisabled = true;
     } catch {
         NotifyWarning("Exception while disabling horns: " + getExceptionInfo());
     }
@@ -47,8 +56,7 @@ void SetHornsDisabled() {
 void SetHornsEnabled() {
     try {
         cast<CTrackManiaNetworkServerInfo>(cast<CGameManiaPlanet>(GetApp()).Network.ServerInfo).DisableHorns = false;
-        if (S_ShowNotifications)
-            Notify("Re-enabled horns.");
+        HornCurrentlyDisabled = false;
     } catch {
         NotifyWarning("Exception while enabling horns: " + getExceptionInfo());
     }
@@ -76,7 +84,22 @@ void NotifyInfo(const string &in msg) {
 
 /** Called whenever a key is pressed on the keyboard. See the documentation for the [`VirtualKey` enum](https://openplanet.dev/docs/api/global/VirtualKey). */
 UI::InputBlocking OnKeyPress(bool down, VirtualKey key) {
-    if (down && key == S_ShortcutKey)
-        OnActivateTimeout();
+    // Only run once every second, to avoid user holding down key to continuously toggle horn
+    if (down && key == 190) {
+        if (Time::Now > lastCheck + 1000) {
+            //NotifyInfo("Current Time:" + Time::Now + " Last Checked:" + lastCheck);
+            lastCheck = Time::Now;
+            if (HornCurrentlyDisabled) {
+                NotifyInfo("HORN ENABLED");
+                print("HORN ENABLED");
+                SetHornsEnabled();
+            }
+            else {
+                NotifyInfo("HORN DISABLED");
+                print("HORN DISABLED");
+                SetHornsDisabled();
+            }
+        }
+    }
     return UI::InputBlocking::DoNothing;
 }
